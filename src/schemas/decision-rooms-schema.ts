@@ -19,13 +19,14 @@ export const decisionRoomsSchema: CollectionSchema = {
       storage: 'text',
       interpretation: { kind: 'json' },
       required: true,
+      immutable: true,
     },
   ],
   collaboratorsField: 'participantIds',
   permissions: {
     '*': { read: false, create: false, update: false, delete: false },
     viewer: { read: 'shared', create: false, update: false, delete: false },
-    member: { read: 'shared', create: true, update: 'shared', delete: 'own' },
+    member: { read: 'shared', create: true, update: 'own', delete: 'own' },
     admin: { read: true, create: true, update: true, delete: true },
   },
 }
