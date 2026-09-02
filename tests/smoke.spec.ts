@@ -5,8 +5,8 @@ import { captureConsoleErrors } from './helpers/errors'
  * Smoke tests covering both page kinds this template ships:
  *   - '/'      → the static landing (top level of src/pages/): no providers,
  *                so no auth fetch and no records WebSocket on load.
- *   - '/home'  → a dynamic page (under src/pages/(app)/): the providers mount,
- *                the nav shell renders, and the records WebSocket connects.
+ *   - '/home'  → a gated dynamic page: providers mount, the nav shell renders,
+ *                and signed-out visitors cannot see the dashboard.
  *
  * The "static contract" test is the guardrail for the per-page opt-out: if
  * someone moves the providers back up into _app.tsx, it fails.
@@ -50,6 +50,9 @@ test.describe('Smoke tests', () => {
     await page.goto('/home')
     await expect(page.getByTestId('nav-sign-in-button')).toBeVisible({ timeout: 15000 })
     await expect(page.getByTestId('nav-user-name')).toHaveCount(0)
+    await expect(page.getByTestId('decision-dashboard')).toHaveCount(0)
+    await page.getByTestId('nav-sign-in-button').click()
+    await expect(page.getByTestId('auth-overlay')).toBeVisible()
   })
 
   test('unknown route shows 404', async ({ page }) => {
