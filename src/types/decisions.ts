@@ -5,6 +5,7 @@ export interface DecisionRoom {
   question: string
   status: DecisionStatus
   participantIds: string[]
+  inviteToken: string
 }
 
 export interface DecisionOption {
@@ -27,6 +28,21 @@ export interface DecisionScore {
   criterionId: string
   userId: string
   value: number
+  participantIds: string[]
+}
+
+export interface DecisionComment {
+  roomId: string
+  userId: string
+  content: string
+  participantIds: string[]
+}
+
+export interface DecisionVote {
+  roomId: string
+  optionId: string
+  userId: string
+  participantIds: string[]
 }
 
 export interface DecisionEntity<T> {

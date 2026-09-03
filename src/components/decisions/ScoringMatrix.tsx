@@ -9,21 +9,21 @@ import { useToast } from '../ui/Toast'
 interface ScoringMatrixProps {
   roomId: string
   userId: string
+  participantIds: string[]
   options: RecordData<DecisionOption>[]
   criteria: RecordData<DecisionCriterion>[]
 }
 
-export function ScoringMatrix({ roomId, userId, options, criteria }: ScoringMatrixProps) {
-  const { records: scores, status } = useQuery<DecisionScore>('decision-scores', {
-    where: { roomId, userId },
-  })
+export function ScoringMatrix({ roomId, userId, participantIds, options, criteria }: ScoringMatrixProps) {
+  const { records: scores, status } = useQuery<DecisionScore>('decision-scores', { where: { roomId } })
   const { ready, createConfirmed, putConfirmed } = useMutations<DecisionScore>('decision-scores')
   const [pendingCell, setPendingCell] = useState<string | null>(null)
   const { error } = useToast()
 
-  const scoresByCell = useMemo(
-    () => new Map(scores.map((score) => [`${score.data.optionId}:${score.data.criterionId}`, score])),
-    [scores],
+  const ownScores = useMemo(() => scores.filter((score) => score.data.userId === userId), [scores, userId])
+  const ownScoresByCell = useMemo(
+    () => new Map(ownScores.map((score) => [`${score.data.optionId}:${score.data.criterionId}`, score])),
+    [ownScores],
   )
   const rankings = useMemo(
     () => calculateWeightedRankings(options, criteria, scores),
@@ -33,21 +33,21 @@ export function ScoringMatrix({ roomId, userId, options, criteria }: ScoringMatr
   const completedScores = useMemo(() => {
     const optionIds = new Set(options.map((option) => option.recordId))
     const criterionIds = new Set(criteria.map((criterion) => criterion.recordId))
-    return scores.filter(
+    return ownScores.filter(
       (score) =>
         optionIds.has(score.data.optionId) && criterionIds.has(score.data.criterionId),
     ).length
-  }, [criteria, options, scores])
+  }, [criteria, options, ownScores])
 
   async function setScore(optionId: string, criterionId: string, value: number) {
     const cellId = `${optionId}:${criterionId}`
-    const existing = scoresByCell.get(cellId)
+    const existing = ownScoresByCell.get(cellId)
     setPendingCell(cellId)
     try {
       if (existing) {
         await putConfirmed(existing.recordId, { value })
       } else {
-        await createConfirmed({ roomId, optionId, criterionId, userId, value })
+        await createConfirmed({ roomId, optionId, criterionId, userId, value, participantIds })
       }
     } catch (cause) {
       error('Could not save score', cause instanceof Error ? cause.message : String(cause))
@@ -72,7 +72,7 @@ export function ScoringMatrix({ roomId, userId, options, criteria }: ScoringMatr
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Step 3</p>
           <h2 className="mt-1 text-xl font-semibold text-foreground">Score independently</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Rate every option from 1 (weak) to 5 (strong).</p>
+          <p className="mt-1 text-sm text-muted-foreground">Rate every option from 1 (weak) to 5 (strong). Your entries stay separate from everyone else's.</p>
         </div>
         <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
           {completedScores}/{expectedScores} scored
@@ -98,7 +98,7 @@ export function ScoringMatrix({ roomId, userId, options, criteria }: ScoringMatr
                 <th scope="row" className="px-4 py-4 text-left font-medium text-foreground">{option.data.title}</th>
                 {criteria.map((criterion) => {
                   const cellId = `${option.recordId}:${criterion.recordId}`
-                  const score = scoresByCell.get(cellId)
+                  const score = ownScoresByCell.get(cellId)
                   return (
                     <td key={criterion.recordId} className="px-4 py-3 text-center">
                       <select
@@ -124,8 +124,8 @@ export function ScoringMatrix({ roomId, userId, options, criteria }: ScoringMatr
         <div className="flex items-center gap-3">
           <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><BarChart3 aria-hidden /></span>
           <div>
-            <h3 className="font-semibold text-foreground">Weighted ranking</h3>
-            <p className="text-sm text-muted-foreground">Score × weight, divided by total criterion weight.</p>
+            <h3 className="font-semibold text-foreground">Team weighted ranking</h3>
+            <p className="text-sm text-muted-foreground">Each person's score × weight is divided by total criterion weight, then averaged.</p>
           </div>
         </div>
         <ol className="mt-4 grid gap-3">
@@ -134,7 +134,9 @@ export function ScoringMatrix({ roomId, userId, options, criteria }: ScoringMatr
               <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">{index + 1}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-foreground">{ranking.title}</p>
-                <p className="text-xs text-muted-foreground">{ranking.completedCriteria}/{ranking.totalCriteria} criteria scored</p>
+                <p className="text-xs text-muted-foreground">
+                  {ranking.completedCriteria}/{ranking.totalCriteria} ratings · {ranking.contributorCount} contributor{ranking.contributorCount === 1 ? '' : 's'}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-xl font-semibold tabular-nums text-foreground">{ranking.score.toFixed(2)}</p>
@@ -145,6 +147,9 @@ export function ScoringMatrix({ roomId, userId, options, criteria }: ScoringMatr
           ))}
         </ol>
       </div>
+      <p className="mt-4 text-xs text-muted-foreground" data-testid="team-rating-count">
+        {scores.length} team rating{scores.length === 1 ? '' : 's'} received live
+      </p>
     </section>
   )
 }

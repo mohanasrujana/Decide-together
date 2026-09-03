@@ -1,6 +1,14 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('API tests', () => {
+  test('decision room actions require authentication', async ({ request }) => {
+    const response = await request.post('/api/actions/joinDecisionRoom', {
+      data: { roomId: 'room', inviteToken: 'token' },
+    })
+
+    expect(response.status()).toBe(401)
+  })
+
   test('auth proxy forwards to auth worker', async ({ request }) => {
     const res = await request.get('/api/auth/ok')
     expect(res.ok()).toBeTruthy()

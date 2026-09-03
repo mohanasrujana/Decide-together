@@ -10,11 +10,12 @@ import type { DecisionOption } from '../../types/decisions'
 
 interface OptionEditorProps {
   roomId: string
+  userId: string
   participantIds: string[]
   options: RecordData<DecisionOption>[]
 }
 
-export function OptionEditor({ roomId, participantIds, options }: OptionEditorProps) {
+export function OptionEditor({ roomId, userId, participantIds, options }: OptionEditorProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -114,28 +115,32 @@ export function OptionEditor({ roomId, participantIds, options }: OptionEditorPr
               <h3 className="font-medium text-foreground">{option.data.title}</h3>
               {option.data.description ? <p className="mt-1 text-sm text-muted-foreground">{option.data.description}</p> : null}
             </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              aria-label={`Edit ${option.data.title}`}
-              disabled={!ready || busyId !== null}
-              onClick={() => {
-                setEditingId(option.recordId)
-                setTitle(option.data.title)
-                setDescription(option.data.description ?? '')
-              }}
-            >
-              <Pencil aria-hidden />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              aria-label={`Delete ${option.data.title}`}
-              disabled={!ready || busyId !== null}
-              onClick={() => void deleteOption(option)}
-            >
-              <Trash2 aria-hidden />
-            </Button>
+            {option.createdBy === userId ? (
+              <>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Edit ${option.data.title}`}
+                  disabled={!ready || busyId !== null}
+                  onClick={() => {
+                    setEditingId(option.recordId)
+                    setTitle(option.data.title)
+                    setDescription(option.data.description ?? '')
+                  }}
+                >
+                  <Pencil aria-hidden />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Delete ${option.data.title}`}
+                  disabled={!ready || busyId !== null}
+                  onClick={() => void deleteOption(option)}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              </>
+            ) : null}
           </article>
         ))}
       </div>

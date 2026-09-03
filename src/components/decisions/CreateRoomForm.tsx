@@ -33,6 +33,7 @@ export function CreateRoomForm({ userId, onCreated }: CreateRoomFormProps) {
         question: cleanQuestion,
         status: 'draft',
         participantIds: [userId],
+        inviteToken: crypto.randomUUID(),
       })
       onCreated(roomId)
     } catch (cause) {

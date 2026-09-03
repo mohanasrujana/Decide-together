@@ -14,6 +14,8 @@ import { decisionRoomsSchema } from './schemas/decision-rooms-schema'
 import { decisionOptionsSchema } from './schemas/decision-options-schema'
 import { decisionCriteriaSchema } from './schemas/decision-criteria-schema'
 import { decisionScoresSchema } from './schemas/decision-scores-schema'
+import { decisionCommentsSchema } from './schemas/decision-comments-schema'
+import { decisionVotesSchema } from './schemas/decision-votes-schema'
 
 export const schemas: CollectionSchema[] = [
   usersSchema,
@@ -22,4 +24,6 @@ export const schemas: CollectionSchema[] = [
   decisionOptionsSchema,
   decisionCriteriaSchema,
   decisionScoresSchema,
+  decisionCommentsSchema,
+  decisionVotesSchema,
 ]

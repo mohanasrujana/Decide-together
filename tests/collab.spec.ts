@@ -62,6 +62,76 @@ test('each browser renders its own signed-in account', async ({ users }) => {
   }
 })
 
+test('two users join, edit, score, discuss, and vote without refreshing', async ({ users }) => {
+  const [a, b] = await users(2)
+  const marker = `__test-${Date.now()}__`
+  const roomTitle = `${marker} Launch decision`
+
+  await a.page.goto('/home')
+  await expect(a.page.getByTestId('decision-dashboard')).toBeVisible({ timeout: 15_000 })
+  await a.page.getByLabel('Decision name').fill(roomTitle)
+  await a.page.getByLabel('What are you deciding?').fill('Which launch plan should the team choose?')
+  await a.page.getByRole('button', { name: 'Create room' }).click()
+  await expect(a.page).toHaveURL(/\/decisions\/[^/]+$/)
+
+  try {
+    const inviteLink = await a.page.getByTestId('shareable-room-link').inputValue()
+    await b.page.goto(inviteLink)
+    await expect(b.page.getByTestId('join-room-prompt')).toBeVisible({ timeout: 15_000 })
+    await b.page.getByRole('button', { name: 'Join room' }).click()
+    await expect(b.page.getByTestId('decision-room')).toContainText(roomTitle, { timeout: 15_000 })
+
+    await expect(a.page.getByTestId('room-presence')).toContainText('2 online', { timeout: 15_000 })
+    await expect(b.page.getByTestId('room-presence')).toContainText('2 online', { timeout: 15_000 })
+
+    const optionA = `${marker} Northstar`
+    const optionB = `${marker} Bluebird`
+    await a.page.getByLabel('Option title').fill(optionA)
+    await a.page.getByRole('button', { name: 'Add option' }).click()
+    await expect(b.page.getByRole('heading', { name: optionA })).toBeVisible()
+    await expect(b.page.getByRole('button', { name: `Edit ${optionA}` })).toHaveCount(0)
+
+    await b.page.getByLabel('Option title').fill(optionB)
+    await b.page.getByRole('button', { name: 'Add option' }).click()
+    await expect(a.page.getByRole('heading', { name: optionB })).toBeVisible()
+    await expect(a.page.getByRole('button', { name: `Edit ${optionB}` })).toHaveCount(0)
+
+    await a.page.getByLabel('Criterion name').fill('Quality')
+    await a.page.getByRole('button', { name: 'Add', exact: true }).click()
+    await expect(b.page.getByRole('heading', { name: 'Quality' })).toBeVisible()
+    await expect(b.page.getByRole('button', { name: 'Increase Quality weight' })).toHaveCount(0)
+
+    await a.page.getByLabel(`${optionA} score for Quality`).selectOption('5')
+    await expect(b.page.getByTestId('team-rating-count')).toHaveText('1 team rating received live')
+    await b.page.getByLabel(`${optionA} score for Quality`).selectOption('3')
+    await expect(a.page.getByTestId('team-rating-count')).toHaveText('2 team ratings received live')
+    await expect(a.page.getByTestId('weighted-ranking')).toContainText('2 contributors')
+
+    await a.page.getByLabel('Room message').fill(`${marker} I prefer the safer rollout.`)
+    await a.page.getByRole('button', { name: 'Send message' }).click()
+    await expect(b.page.getByText(`${marker} I prefer the safer rollout.`)).toBeVisible()
+    await b.page.getByLabel('Room message').fill(`${marker} Agreed; the risk is lower.`)
+    await b.page.getByRole('button', { name: 'Send message' }).click()
+    await expect(a.page.getByText(`${marker} Agreed; the risk is lower.`)).toBeVisible()
+
+    await a.page.getByRole('button', { name: `Vote for ${optionA}` }).click()
+    await expect(b.page.getByTestId('vote-total')).toHaveText('1 total vote')
+    await b.page.getByRole('button', { name: `Vote for ${optionB}` }).click()
+    await expect(a.page.getByTestId('vote-total')).toHaveText('2 total votes')
+
+    // Changing A's choice updates its unique room/user row instead of creating a second vote.
+    await a.page.getByRole('button', { name: `Vote for ${optionB}` }).click()
+    await expect(b.page.getByTestId('vote-total')).toHaveText('2 total votes')
+    await expect(b.page.getByRole('button', { name: `Vote for ${optionB}` })).toContainText('2')
+  } finally {
+    if (await a.page.getByRole('button', { name: 'Delete room' }).isVisible().catch(() => false)) {
+      await a.page.getByRole('button', { name: 'Delete room' }).click()
+      await a.page.getByRole('button', { name: 'Confirm delete' }).click()
+      await expect(a.page).toHaveURL(/\/home$/)
+    }
+  }
+})
+
 test('API status page renders loading success and error states', async ({ users }) => {
   const [user] = await users(1)
   let shouldFail = false

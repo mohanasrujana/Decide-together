@@ -1,7 +1,7 @@
 import type { CollectionSchema } from 'deepspace/schema'
 
-export const decisionScoresSchema: CollectionSchema = {
-  name: 'decision-scores',
+export const decisionCommentsSchema: CollectionSchema = {
+  name: 'decision-comments',
   columns: [
     {
       name: 'roomId',
@@ -15,28 +15,6 @@ export const decisionScoresSchema: CollectionSchema = {
       immutable: true,
     },
     {
-      name: 'optionId',
-      storage: 'text',
-      interpretation: {
-        kind: 'reference',
-        targetTable: 'decision-options',
-        displayColumn: 'title',
-      },
-      required: true,
-      immutable: true,
-    },
-    {
-      name: 'criterionId',
-      storage: 'text',
-      interpretation: {
-        kind: 'reference',
-        targetTable: 'decision-criteria',
-        displayColumn: 'name',
-      },
-      required: true,
-      immutable: true,
-    },
-    {
       name: 'userId',
       storage: 'text',
       interpretation: 'plain',
@@ -44,7 +22,7 @@ export const decisionScoresSchema: CollectionSchema = {
       immutable: true,
       userBound: true,
     },
-    { name: 'value', storage: 'number', interpretation: 'plain', required: true },
+    { name: 'content', storage: 'text', interpretation: 'plain', required: true },
     {
       name: 'participantIds',
       storage: 'text',
@@ -52,12 +30,11 @@ export const decisionScoresSchema: CollectionSchema = {
       required: true,
     },
   ],
-  uniqueOn: ['roomId', 'optionId', 'criterionId', 'userId'],
   ownerField: 'userId',
   collaboratorsField: 'participantIds',
   permissions: {
     '*': { read: false, create: false, update: false, delete: false },
-    viewer: { read: false, create: false, update: false, delete: false },
+    viewer: { read: 'shared', create: false, update: false, delete: false },
     member: { read: 'shared', create: true, update: 'own', delete: 'own' },
     admin: { read: true, create: true, update: true, delete: true },
   },

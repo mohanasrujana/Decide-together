@@ -9,11 +9,12 @@ import type { DecisionCriterion } from '../../types/decisions'
 
 interface CriteriaEditorProps {
   roomId: string
+  userId: string
   participantIds: string[]
   criteria: RecordData<DecisionCriterion>[]
 }
 
-export function CriteriaEditor({ roomId, participantIds, criteria }: CriteriaEditorProps) {
+export function CriteriaEditor({ roomId, userId, participantIds, criteria }: CriteriaEditorProps) {
   const [name, setName] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const { ready, createConfirmed, putConfirmed, removeConfirmed } =
@@ -93,7 +94,7 @@ export function CriteriaEditor({ roomId, participantIds, criteria }: CriteriaEdi
               <h3 className="truncate font-medium text-foreground">{criterion.data.name}</h3>
               <p className="text-xs text-muted-foreground">Weight {criterion.data.weight} of 5</p>
             </div>
-            <div className="flex items-center rounded-lg border border-border bg-background">
+            {criterion.createdBy === userId ? <div className="flex items-center rounded-lg border border-border bg-background">
               <Button
                 size="icon"
                 variant="ghost"
@@ -115,8 +116,8 @@ export function CriteriaEditor({ roomId, participantIds, criteria }: CriteriaEdi
               >
                 <Plus aria-hidden />
               </Button>
-            </div>
-            <Button
+            </div> : <span className="text-xs text-muted-foreground">Shared</span>}
+            {criterion.createdBy === userId ? <Button
               size="icon"
               variant="ghost"
               aria-label={`Delete ${criterion.data.name}`}
@@ -124,7 +125,7 @@ export function CriteriaEditor({ roomId, participantIds, criteria }: CriteriaEdi
               onClick={() => void deleteCriterion(criterion)}
             >
               <Trash2 aria-hidden />
-            </Button>
+            </Button> : null}
           </article>
         ))}
       </div>

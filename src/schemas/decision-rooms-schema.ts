@@ -19,8 +19,8 @@ export const decisionRoomsSchema: CollectionSchema = {
       storage: 'text',
       interpretation: { kind: 'json' },
       required: true,
-      immutable: true,
     },
+    { name: 'inviteToken', storage: 'text', interpretation: 'plain', required: true, immutable: true },
   ],
   collaboratorsField: 'participantIds',
   permissions: {
