@@ -84,6 +84,8 @@ test.describe('Smoke tests', () => {
     await user.page.getByRole('button', { name: 'Create room' }).click()
     await expect(user.page).toHaveURL(/\/decisions\/[^/]+$/)
     await expect(user.page.getByTestId('decision-room')).toContainText(roomTitle)
+    await expect(user.page.getByTestId('ai-summary-empty')).toBeVisible()
+    await expect(user.page.getByRole('button', { name: 'Generate explanation' })).toHaveCount(0)
 
     for (const option of ['Northstar', 'Bluebird']) {
       await user.page.getByLabel('Option title').fill(`${marker} ${option}`)

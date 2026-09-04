@@ -9,6 +9,7 @@ import { ScoringMatrix } from '../../../../components/decisions/ScoringMatrix'
 import { Button } from '../../../../components/ui/Button'
 import { useToast } from '../../../../components/ui/Toast'
 import type { DecisionCriterion, DecisionOption, DecisionRoom, DecisionScore } from '../../../../types/decisions'
+import { DecisionAiSummaryPanel } from '../../../../components/decisions/DecisionAiSummaryPanel'
 
 export default function DecisionRoomPage() {
   const { roomId = '' } = useParams<{ roomId: string }>()
@@ -162,7 +163,17 @@ export default function DecisionRoomPage() {
           criteria={criteria}
         />
       </div>
-
+      <DecisionAiSummaryPanel
+        key={[
+          ...options.map((option) => `${option.recordId}:${option.updatedAt}`),
+          ...criteria.map(
+            (criterion) => `${criterion.recordId}:${criterion.updatedAt}`,
+          ),
+          ...scores.map((score) => `${score.recordId}:${score.updatedAt}`),
+        ].join('|')}
+        roomId={roomId}
+        hasScores={scores.length > 0}
+      />
       <CollaborationPanel
         roomId={roomId}
         inviteToken={room.data.inviteToken}

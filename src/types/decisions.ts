@@ -45,6 +45,14 @@ export interface DecisionVote {
   participantIds: string[]
 }
 
+export interface DecisionAiSummary {
+  leadingOption: string
+  evidence: string[]
+  majorDisagreement: string
+  missingInformation: string[]
+  suggestedNextAction: string
+}
+
 export interface DecisionEntity<T> {
   recordId: string
   data: T

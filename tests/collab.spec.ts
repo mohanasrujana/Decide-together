@@ -77,6 +77,31 @@ test('two users join, edit, score, discuss, and vote without refreshing', async 
   try {
     const inviteLink = await a.page.getByTestId('shareable-room-link').inputValue()
     await b.page.goto(inviteLink)
+    const invitedRoomId = new URL(inviteLink).pathname.split('/').at(-1)
+    expect(invitedRoomId).toBeTruthy()
+
+    const tokenResponse = await b.context.request.get(new URL('/api/auth/token', inviteLink).toString(),)
+    expect(tokenResponse.ok()).toBeTruthy()
+
+    const tokenPayload = (await tokenResponse.json()) as { token: string }
+
+    const unauthorizedResponse = await b.context.request.post(
+      new URL('/api/actions/generateDecisionSummary', inviteLink).toString(),
+      {
+        headers: {
+          Authorization: `Bearer ${tokenPayload.token}`,
+        },
+        data: {
+          roomId: invitedRoomId,
+        },
+      },
+    )
+
+    expect(unauthorizedResponse.ok()).toBeTruthy()
+    await expect(unauthorizedResponse.json()).resolves.toMatchObject({
+      success: false,
+      error: 'You do not have access to this room',
+    })
     await expect(b.page.getByTestId('join-room-prompt')).toBeVisible({ timeout: 15_000 })
     await b.page.getByRole('button', { name: 'Join room' }).click()
     await expect(b.page.getByTestId('decision-room')).toContainText(roomTitle, { timeout: 15_000 })
