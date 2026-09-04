@@ -265,14 +265,16 @@ const generateDecisionSummary: ActionHandler<Env> = async ({
     {
       model: 'claude-sonnet-5',
       max_tokens: 900,
-      temperature: 0.2,
+      temperature: 0,
       system: [
         'You explain a deterministic group-decision result.',
         'The supplied ranking is authoritative. Never recalculate, reorder, or override it.',
         'Return JSON only, without Markdown fences.',
+        'The entire response must be one object accepted directly by JSON.parse.',
         'Use exactly these keys: leadingOption, evidence, majorDisagreement, missingInformation, suggestedNextAction.',
         'evidence and missingInformation must be arrays of concise strings.',
         `leadingOption must be exactly: ${JSON.stringify(leadingOption)}.`,
+        `Return this exact shape: {"leadingOption":${JSON.stringify(leadingOption)},"evidence":["string"],"majorDisagreement":"string","missingInformation":["string"],"suggestedNextAction":"string"}.`,
       ].join(' '),
       messages: [
         {
