@@ -80,10 +80,21 @@ test('two users join, edit, score, discuss, and vote without refreshing', async 
     const invitedRoomId = new URL(inviteLink).pathname.split('/').at(-1)
     expect(invitedRoomId).toBeTruthy()
 
-    const tokenResponse = await b.context.request.get(new URL('/api/auth/token', inviteLink).toString(),)
-    expect(tokenResponse.ok()).toBeTruthy()
-
-    const tokenPayload = (await tokenResponse.json()) as { token: string }
+    const tokenPayload = await b.page.evaluate(async () => {
+      const response = await fetch('/api/auth/token', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    
+      if (!response.ok) {
+        throw new Error(`Token request failed with ${response.status}`)
+      }
+    
+      return response.json() as Promise<{ token: string }>
+    })
 
     const unauthorizedResponse = await b.context.request.post(
       new URL('/api/actions/generateDecisionSummary', inviteLink).toString(),
@@ -161,6 +172,8 @@ test('API status page renders loading success and error states', async ({ users 
   const [user] = await users(1)
   let shouldFail = false
   let requestCount = 0
+  let releaseCatalog!: () => void
+  const catalogGate = new Promise<void>((resolve) => { releaseCatalog = resolve })
 
   await user.page.route('**/api/integrations', async (route) => {
     requestCount += 1
@@ -173,7 +186,7 @@ test('API status page renders loading success and error states', async ({ users 
       return
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await catalogGate
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -182,8 +195,9 @@ test('API status page renders loading success and error states', async ({ users 
   })
 
   await user.page.goto('/api-status')
-  await expect(user.page.getByText('Loading integration catalog...')).toBeVisible()
-  await expect(user.page.getByText('Integration catalog ready')).toBeVisible()
+  await expect(user.page.getByText('Loading integration catalog...'),).toBeVisible()
+  releaseCatalog()
+  await expect(user.page.getByText('Integration catalog ready'),).toBeVisible()
   await expect(user.page.getByText('2 integrations available.')).toBeVisible()
 
   shouldFail = true
